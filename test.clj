@@ -7,7 +7,6 @@
                 Vector3
                 Component]))
 
-
 (defn reset-world []
     (Application/LoadLevel Application/loadedLevel))
 
@@ -22,14 +21,16 @@
 (defn setup-floor []
     ; why do I need to instantiate once?
     (let [floor (ensure-uniquely-named-object! "myplane" :plane)]
-        (set! 
-            (.. (ensure-uniquely-named-object! "myplane" :plane)
-                transform localScale) 
-            (Vector3. 100 100 100))
-    )
-)
+        (if (not= (type floor) UnityEngine.GameObject)
+            ; sometimes floor is a string, in this case recur until it's a game obj
+            (setup-floor)
+            ; if we have a game obj, setup obj 
+            (set! 
+                (.. floor transform localScale) 
+                (Vector3. 100 100 100)))
+        floor))
 
-(setup-floor)
+
 
 (def sky-cube-vals {
     :position (l/v3 0 20 0)
@@ -38,30 +39,17 @@
 
 (defn build-cube [vals] 
     "vals: map containing :position :name :scale"
-    (let [cube (ensure-uniquely-named-object! (:name vals) :cube)]
+    (let [cube (a/create-primitive :cube (:name vals))]
         (do
-            (set! (.. 
-                    cube
-                    transform
-                    position)
-                (:position vals))
-            (set! (..
-                    cube
-                    transform
-                    localScale
-                    )
-                (:scale vals))
-            (a/ensure-cmpt
-                (.transform cube)
-                UnityEngine.Rigidbody))))
+            (set! (.. cube transform position) (:position vals))
+            (set! (.. cube transform localScale) (:scale vals))
+            (a/ensure-cmpt (.transform cube) UnityEngine.Rigidbody))))
 
+(setup-floor)
 (build-cube sky-cube-vals)
 
+(defn reset-objs []
+    (map a/destroy (concat (a/objects-named "myplane") (a/objects-named "skycube"))))
 
-
-(:name sky-cube-vals)
-(:position sky-cube-vals)
-(ensure-uniquely-named-object! (:name sky-cube-vals) :cube)
-
-(map a/destroy (a/objects-named "skycube"))
+(reset-objs)
 (reset-world)
