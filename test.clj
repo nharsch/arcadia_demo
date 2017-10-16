@@ -1,33 +1,67 @@
 (ns arcadia_demo.test
-    (:use arcadia.core)
-    (:import [UnityEngine Application GameObject Vector2 Vector3]))
+    (:require [arcadia.core :as a]
+              [arcadia.linear :as l])
+    (:import [UnityEngine 
+                Application 
+                GameObject 
+                Vector3
+                Component]))
+
 
 (defn reset-world []
     (Application/LoadLevel Application/loadedLevel))
 
+(defn ensure-uniquely-named-object! 
+    "get or create uniquely named obj"
+    [name type]
+    (let [obj (first (a/objects-named name))]
+      (if obj
+        obj
+        (set! (.. (a/create-primitive type) name) name))))
 
-(defn setup []
-    (let [myplane (create-primitive :plane) 
-          mycube (create-primitive :cube)]
-        (set! (.. (object-named "Plane") name) "myplane")
-        (set! (.. (object-named "Cube") name) "mycube"))
-    (set! (.. (object-named "myplane") transform localScale) (Vector3. 2.0 2.0 2.0))
-    (set! (.. (object-named "mycube") transform position) (Vector3. 0.0 1.0 0.0))
+(defn setup-floor []
+    ; why do I need to instantiate once?
+    (let [floor (ensure-uniquely-named-object! "myplane" :plane)]
+        (set! 
+            (.. (ensure-uniquely-named-object! "myplane" :plane)
+                transform localScale) 
+            (Vector3. 100 100 100))
+    )
 )
-(setup)
 
-(.. (object-named "myplane") transform localScale)
+(setup-floor)
 
-; naive move
-(defn move-obj [obj]
-    (let [cpos (.. obj transform position)]
-        (set! (.. obj transform position) 
-            (Vector3. (.. cpos x) (+ 1 (.. cpos y)) (.. cpos z)))
-    ))
+(def sky-cube-vals {
+    :position (l/v3 0 20 0)
+    :scale (l/v3 1 1 1)
+    :name "skycube"})
 
-(move-obj mycube)
+(defn build-cube [vals] 
+    "vals: map containing :position :name :scale"
+    (let [cube (ensure-uniquely-named-object! (:name vals) :cube)]
+        (do
+            (set! (.. 
+                    cube
+                    transform
+                    position)
+                (:position vals))
+            (set! (..
+                    cube
+                    transform
+                    localScale
+                    )
+                (:scale vals))
+            (a/ensure-cmpt
+                (.transform cube)
+                UnityEngine.Rigidbody))))
+
+(build-cube sky-cube-vals)
 
 
+
+(:name sky-cube-vals)
+(:position sky-cube-vals)
+(ensure-uniquely-named-object! (:name sky-cube-vals) :cube)
+
+(map a/destroy (a/objects-named "skycube"))
 (reset-world)
-(destroy (object-named "Cube"))
-(destroy (object-named "plane"))
