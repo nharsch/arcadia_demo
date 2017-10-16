@@ -1,10 +1,9 @@
-(ns arcadia_demo.test
-    (:require [arcadia.core :as a]
-              [arcadia.linear :as l])
+(ns arcadia_demo.test (:require [arcadia.core :as a] [arcadia.linear :as l])
     (:import [UnityEngine 
                 Application 
                 GameObject 
                 Vector3
+                Input
                 Component]))
 
 (defn reset-world []
@@ -45,11 +44,25 @@
             (set! (.. cube transform localScale) (:scale vals))
             (a/ensure-cmpt (.transform cube) UnityEngine.Rigidbody))))
 
-(setup-floor)
-(build-cube sky-cube-vals)
+
+; build a function that listens for user input
+
+(defn key-press-cube []
+    (if (Input/AnyKey)
+        (build-cube sky-cube-vals)
+    )
+)
+
+; (hook+ (setup-floor) :update, )
 
 (defn reset-objs []
     (map a/destroy (concat (a/objects-named "myplane") (a/objects-named "skycube"))))
 
+(setup-floor)
+(build-cube sky-cube-vals)
+
+
+
+(map a/destroy (a/objects-named "skycube"))
 (reset-objs)
 (reset-world)
